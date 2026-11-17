@@ -1,0 +1,20 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Widgeter"
+            }
+        ],
+        "Category": "Utilities",
+        "Description": "Widgeter launcher for KDE Plasma 6",
+        "Icon": "view-grid",
+        "Id": "Widgeter",
+        "Name": "Widgeter",
+        "Version": "1.0"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "X-Plasma-Provides": [
+        "org.kde.plasma.launchermenu"
+    ]
+}

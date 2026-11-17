@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0
+      http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+    <kcfgfile name=""/>
+    <group name="General">
+        <entry name="panelIcon" type="String">
+            <label>The icon used on the panel button.</label>
+            <default>view-grid</default>
+        </entry>
+        <entry name="gridColumns" type="Int">
+            <label>Number of columns in the cards grid.</label>
+            <default>1</default>
+        </entry>
+        <entry name="cardsJson" type="String">
+            <label>JSON string storing the list of cards.</label>
+            <default>[{"title":"WIDGET","icon":"utilities-terminal","command":"konsole"},{"title":"WIDGET","icon":"system-file-manager","command":"dolphin"},{"title":"WIDGET","icon":"org.kde.plasma.systemmonitor","command":"plasma-systemmonitor"},{"title":"WIDGET","icon":"preferences-system","command":"systemsettings"}]</default>
+        </entry>
+    </group>
+</kcfg>
