@@ -3,18 +3,18 @@
     "KPlugin": {
         "Authors": [
             {
-                "Name": "Widgeter"
+                "Name": "Akrentus"
             }
         ],
+        "BugReportUrl": "https://github.com/Akrentus/Widgeter/issues",
         "Category": "Utilities",
-        "Description": "Widgeter launcher for KDE Plasma 6",
+        "Description": "Customizable card-based quick-launch popup widget for KDE Plasma 6",
         "Icon": "view-grid",
-        "Id": "Widgeter",
+        "Id": "io.github.akrentus.widgeter",
+        "License": "GPL-3.0-or-later",
         "Name": "Widgeter",
-        "Version": "1.0"
+        "Version": "1.0.0",
+        "Website": "https://github.com/Akrentus/Widgeter"
     },
-    "X-Plasma-API-Minimum-Version": "6.0",
-    "X-Plasma-Provides": [
-        "org.kde.plasma.launchermenu"
-    ]
+    "X-Plasma-API-Minimum-Version": "6.0"
 }
