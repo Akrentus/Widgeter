@@ -14,6 +14,7 @@ PlasmoidItem {
     readonly property color cardBorderColor: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.12)
 
     preferredRepresentation: compactRepresentation
+    preloadFullRepresentation: true
 
     // List of card objects: [{ title: "...", icon: "...", command: "..." }]
     property var cardsList: []
@@ -25,14 +26,17 @@ PlasmoidItem {
         connectedSources: []
 
         onNewData: function(sourceName, data) {
+            if (data && data["exit code"] !== undefined && data["exit code"] !== 0) {
+                console.warn("Widgeter: command exited with code", data["exit code"], data["stderr"] || "");
+            }
             disconnectSource(sourceName);
         }
     }
 
-    // Timer for delayed command launch (150 ms) after popup closes
+    // Timer for delayed command launch (300 ms) so the popup finishes closing and deactivating
     Timer {
         id: delayedCommandTimer
-        interval: 150
+        interval: 300
         repeat: false
         property string commandToRun: ""
 
@@ -44,12 +48,18 @@ PlasmoidItem {
         }
     }
 
+    function shellQuote(str) {
+        return "'" + str.replace(/'/g, "'\\''") + "'";
+    }
+
     function runCommand(cmd) {
         if (!cmd || cmd.trim() === "") {
             return;
         }
-        executable.disconnectSource(cmd);
-        executable.connectSource(cmd);
+        // Detach in a new session via bash so quotes, shell syntax, GUI apps, and D-Bus widget triggers work cleanly
+        var wrapped = "setsid -f bash -c " + shellQuote(cmd.trim()) + " </dev/null >/dev/null 2>&1";
+        executable.disconnectSource(wrapped);
+        executable.connectSource(wrapped);
     }
 
     function runCommandDelayed(cmd) {
@@ -255,8 +265,9 @@ PlasmoidItem {
                                 cursorShape: Qt.PointingHandCursor
 
                                 onClicked: {
+                                    const cmd = cardDelegate.modelData ? cardDelegate.modelData.command : "";
                                     root.expanded = false;
-                                    root.runCommandDelayed(cardDelegate.modelData.command);
+                                    root.runCommandDelayed(cmd);
                                 }
                             }
 

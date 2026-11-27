@@ -17,14 +17,29 @@ KCM.SimpleKCM {
 
     readonly property color separatorColor: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.15)
 
-    property var cardsModel: []
+    ListModel {
+        id: cardsListModel
+    }
 
     onCfg_cardsJsonChanged: {
         try {
-            if (cfg_cardsJson && cfg_cardsJson !== JSON.stringify(cardsModel)) {
+            if (cfg_cardsJson && cfg_cardsJson !== serializeCardsModel()) {
                 loadCardsFromConfig();
             }
         } catch (e) {}
+    }
+
+    function serializeCardsModel() {
+        let arr = [];
+        for (let i = 0; i < cardsListModel.count; i++) {
+            let item = cardsListModel.get(i);
+            arr.push({
+                title: item.title,
+                icon: item.icon,
+                command: item.command
+            });
+        }
+        return JSON.stringify(arr);
     }
 
     function loadCardsFromConfig() {
@@ -33,66 +48,62 @@ KCM.SimpleKCM {
             if (!raw || raw.trim() === "") {
                 raw = '[{"title":"WIDGET","icon":"utilities-terminal","command":"konsole"},{"title":"WIDGET","icon":"system-file-manager","command":"dolphin"},{"title":"WIDGET","icon":"org.kde.plasma.systemmonitor","command":"plasma-systemmonitor"},{"title":"WIDGET","icon":"preferences-system","command":"systemsettings"}]';
             }
-            cardsModel = JSON.parse(raw);
+            var parsed = JSON.parse(raw);
+            if (!Array.isArray(parsed)) {
+                parsed = [];
+            }
+            cardsListModel.clear();
+            for (let i = 0; i < parsed.length; i++) {
+                let entry = parsed[i] || {};
+                cardsListModel.append({
+                    title: entry.title !== undefined && entry.title !== null ? String(entry.title) : "",
+                    icon: entry.icon !== undefined && entry.icon !== null ? String(entry.icon) : "",
+                    command: entry.command !== undefined && entry.command !== null ? String(entry.command) : ""
+                });
+            }
         } catch (err) {
             console.error("Widgeter Config: error parsing JSON:", err);
-            cardsModel = [];
+            cardsListModel.clear();
         }
     }
 
     function syncCardsToConfig() {
-        cfg_cardsJson = JSON.stringify(cardsModel);
+        cfg_cardsJson = serializeCardsModel();
     }
 
     function addCard() {
-        let list = cardsModel.slice();
-        list.push({
+        cardsListModel.append({
             title: "WIDGET",
             icon: "application-x-executable",
             command: ""
         });
-        cardsModel = list;
         syncCardsToConfig();
     }
 
     function removeCard(idx) {
-        if (idx >= 0 && idx < cardsModel.length) {
-            let list = cardsModel.slice();
-            list.splice(idx, 1);
-            cardsModel = list;
+        if (idx >= 0 && idx < cardsListModel.count) {
+            cardsListModel.remove(idx, 1);
             syncCardsToConfig();
         }
     }
 
     function moveUp(idx) {
-        if (idx > 0 && idx < cardsModel.length) {
-            let list = cardsModel.slice();
-            let temp = list[idx];
-            list[idx] = list[idx - 1];
-            list[idx - 1] = temp;
-            cardsModel = list;
+        if (idx > 0 && idx < cardsListModel.count) {
+            cardsListModel.move(idx, idx - 1, 1);
             syncCardsToConfig();
         }
     }
 
     function moveDown(idx) {
-        if (idx >= 0 && idx < cardsModel.length - 1) {
-            let list = cardsModel.slice();
-            let temp = list[idx];
-            list[idx] = list[idx + 1];
-            list[idx + 1] = temp;
-            cardsModel = list;
+        if (idx >= 0 && idx < cardsListModel.count - 1) {
+            cardsListModel.move(idx, idx + 1, 1);
             syncCardsToConfig();
         }
     }
 
     function updateCardField(idx, field, value) {
-        if (idx >= 0 && idx < cardsModel.length) {
-            let list = cardsModel.slice();
-            let item = Object.assign({}, list[idx]);
-            item[field] = value;
-            list[idx] = item;
-            cardsModel = list;
+        if (idx >= 0 && idx < cardsListModel.count) {
+            cardsListModel.setProperty(idx, field, value);
             syncCardsToConfig();
         }
     }
@@ -265,7 +276,7 @@ KCM.SimpleKCM {
                 }
 
                 QQC2.Label {
-                    text: i18np("%1 card configured", "%1 cards configured", configRoot.cardsModel.length)
+                    text: i18np("%1 card configured", "%1 cards configured", cardsListModel.count)
                     opacity: 0.7
                 }
             }
@@ -277,12 +288,14 @@ KCM.SimpleKCM {
             spacing: Kirigami.Units.smallSpacing * 2
 
             Repeater {
-                model: configRoot.cardsModel
+                model: cardsListModel
 
                 delegate: Rectangle {
                     id: cardConfigItem
-                    required property var modelData
                     required property int index
+                    required property string title
+                    required property string icon
+                    required property string command
 
                     Layout.fillWidth: true
                     implicitHeight: cardInnerLayout.implicitHeight + Kirigami.Units.smallSpacing * 4
@@ -320,7 +333,7 @@ KCM.SimpleKCM {
                             QQC2.Button {
                                 icon.name: "go-down"
                                 display: QQC2.AbstractButton.IconOnly
-                                enabled: cardConfigItem.index < configRoot.cardsModel.length - 1
+                                enabled: cardConfigItem.index < cardsListModel.count - 1
                                 QQC2.ToolTip.visible: hovered
                                 QQC2.ToolTip.text: i18n("Move Down")
                                 onClicked: configRoot.moveDown(cardConfigItem.index)
@@ -351,11 +364,11 @@ KCM.SimpleKCM {
                             }
 
                             QQC2.TextField {
-                                text: cardConfigItem.modelData.title || ""
+                                text: cardConfigItem.title
                                 placeholderText: "WIDGET"
                                 Layout.fillWidth: true
                                 onTextChanged: {
-                                    if (cardConfigItem.modelData.title !== text) {
+                                    if (cardConfigItem.title !== text) {
                                         configRoot.updateCardField(cardConfigItem.index, "title", text);
                                     }
                                 }
@@ -384,17 +397,17 @@ KCM.SimpleKCM {
                                     anchors.centerIn: parent
                                     width: 22
                                     height: 22
-                                    source: cardConfigItem.modelData.icon || "application-x-executable"
+                                    source: cardConfigItem.icon || "application-x-executable"
                                 }
                             }
 
                             QQC2.TextField {
                                 id: cardIconInput
-                                text: cardConfigItem.modelData.icon || ""
+                                text: cardConfigItem.icon
                                 placeholderText: "application-x-executable"
                                 Layout.fillWidth: true
                                 onTextChanged: {
-                                    if (cardConfigItem.modelData.icon !== text) {
+                                    if (cardConfigItem.icon !== text) {
                                         configRoot.updateCardField(cardConfigItem.index, "icon", text);
                                     }
                                 }
@@ -433,11 +446,11 @@ KCM.SimpleKCM {
                             }
 
                             QQC2.TextField {
-                                text: cardConfigItem.modelData.command || ""
+                                text: cardConfigItem.command
                                 placeholderText: i18n("Bash command (e.g. konsole)")
                                 Layout.fillWidth: true
                                 onTextChanged: {
-                                    if (cardConfigItem.modelData.command !== text) {
+                                    if (cardConfigItem.command !== text) {
                                         configRoot.updateCardField(cardConfigItem.index, "command", text);
                                     }
                                 }
